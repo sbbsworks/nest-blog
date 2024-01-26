@@ -1,0 +1,78 @@
+services:
+
+  notifier-mongo3:
+    container_name: ${NOTIFIER_INITDB_CONTAINER3}
+    image: mongo-notifier3
+    depends_on:
+      - ${NOTIFIER_INITDB_CONTAINER1}
+      - ${NOTIFIER_INITDB_CONTAINER2}
+    build:
+      context: ./
+      dockerfile: Dockerfile3
+    command: >
+      /bin/bash -c "sleep 10 && chmod +x ./replica.sh && ./replica.sh"
+    networks:
+      - nest_blog
+
+  notifier-mongo1:
+    container_name: ${NOTIFIER_INITDB_CONTAINER1}
+    image: mongo-notifier
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    ##command: ["--keyFile", "/data/keyfile"]
+    command: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0", "--port", "${NOTIFIER_INITDB_PORT}"]
+    ports:
+      - 127.0.0.1:27018:${NOTIFIER_INITDB_PORT}
+    #environment:
+    #  - MONGO_INITDB_ROOT_USERNAME=${NOTIFIER_INITDB_ROOT_USERNAME}
+    #  - MONGO_INITDB_ROOT_PASSWORD=${NOTIFIER_INITDB_ROOT_PASSWORD}
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh ${NOTIFIER_INITDB_CONTAINER1}:${NOTIFIER_INITDB_PORT}/test --quiet
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - nest_blog
+
+  notifier-mongo2:
+    container_name: ${NOTIFIER_INITDB_CONTAINER2}
+    image: mongo-notifier
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0", "--port", "${NOTIFIER_INITDB_PORT}"]
+    ports:
+      - 127.0.0.1:27019:${NOTIFIER_INITDB_PORT}
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh ${NOTIFIER_INITDB_CONTAINER2}:${NOTIFIER_INITDB_PORT}/test --quiet
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - nest_blog
+
+
+  notifier-smtp-server:
+    image: gessnerfl/fake-smtp-server
+    container_name: ${NOTIFIER_SMTP_CONTAINER}
+    hostname: ${NOTIFIER_SMTP_HOSTNAME}
+    restart: always
+    ports:
+      - 127.0.0.1:${NOTIFIER_SMTP_PORT}:${NOTIFIER_SMTP_PORT}
+      - 127.0.0.1:${NOTIFIER_SERVER_PORT}:${NOTIFIER_SERVER_PORT}
+      - 127.0.0.1:${NOTIFIER_MANAGEMENT_SERVER_PORT}:${NOTIFIER_MANAGEMENT_SERVER_PORT}
+    environment:
+      - FAKESMTP_AUTHENTICATION_USERNAME=${NOTIFIER_AUTHENTICATION_USERNAME}
+      - FAKESMTP_AUTHENTICATION_PASSWORD=${NOTIFIER_AUTHENTICATION_PASSWORD}
+    networks:
+      - nest_blog
+
+networks:
+  nest_blog:
+    external: true
+    name: nest_blog

@@ -1,0 +1,23 @@
+services:
+  rabbitmq:
+    container_name: ${RABBIT_MQ_CONTAINER_NAME}
+    image: rabbitmq:management
+    restart: always
+    ports:
+      - 127.0.0.1:${RABBIT_MQ_PORT}:${RABBIT_MQ_PORT}
+      - 127.0.0.1:${RABBIT_MQ_WEB_SERVER_PORT}:${RABBIT_MQ_WEB_SERVER_PORT}
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBIT_MQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBIT_MQ_PASSWORD}
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - nest_blog
+networks:
+  nest_blog:
+    external: true
+    name: nest_blog

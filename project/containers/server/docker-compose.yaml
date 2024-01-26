@@ -1,0 +1,23 @@
+services:
+
+  nest_blog_server:
+    container_name: nest_blog_server
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: nest_blog_server
+    networks:
+      - nest_blog
+    ports:
+      - 127.0.0.1:${GATEWAY_API_PORT}:${GATEWAY_API_PORT}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 1s
+        max_attempts: 20
+        window: 120s
+
+networks:
+  nest_blog:
+    external: true
+    name: nest_blog

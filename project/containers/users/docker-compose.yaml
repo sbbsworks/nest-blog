@@ -1,0 +1,27 @@
+services:
+
+  users-mongo:
+    container_name: ${MONGO_INITDB_CONTAINER}
+    image: mongo-users
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command: mongod --port ${MONGO_INITDB_PORT}
+    ports:
+      - 127.0.0.1:${MONGO_INITDB_PORT}:${MONGO_INITDB_PORT}
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh ${MONGO_INITDB_CONTAINER}:${MONGO_INITDB_PORT}/test --quiet
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - nest_blog
+networks:
+  nest_blog:
+    external: true
+    name: nest_blog

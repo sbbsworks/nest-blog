@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../node_modules/@prisma-blog/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRESDB_URL")
+}
+
+model posts {
+    id String @id @default(uuid())
+    authorId String
+    type EPostType
+    state EPostState @default(published)
+    rePosted Boolean @default(false)
+    originalPostId String?
+    originalAuthorId String?
+    body Json
+    createdAt DateTime @default(now())
+    publishedAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    tags tags[]
+    likes likes[]
+    comments comments[]
+}
+enum EPostType {
+    video
+    text
+    citation
+    photo
+    link
+}
+enum EPostState {
+    published
+    draft
+}
+
+model tags {
+    id String @id @default(uuid())
+    name String @unique
+    posts posts[]
+}
+
+model likes {
+    id String @id @default(uuid())
+    authorId String
+    post posts @relation(fields: [postId], references: [id], onDelete: Cascade)
+    postId String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    @@unique([authorId, postId], name: "uniqueLike")
+}
+
+model comments {
+    id String @id @default(uuid())
+    authorId String
+    posts posts @relation(fields: [postId], references: [id], onDelete: Cascade)
+    postId String
+    comment String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model feeds {
+    id String @id @default(uuid())
+    ownerId String
+    donorId String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    @@unique([ownerId, donorId], name: "uniqueFeed")
+}
+
+//pnpm dotenv -e ./containers/blog/.env -- prisma migrate dev --name init --schema=./shared/src/prisma/blog/blog.prisma
+//pnpm dotenv -e ./containers/blog/.env -- prisma generate --schema=./shared/src/prisma/blog/blog.prisma
+
+//pnpm dotenv -e ./containers/blog/.env -- prisma validate --schema=./shared/src/prisma/blog/blog.prisma
+//pnpm dotenv -e ./containers/blog/.env -- prisma migrate reset --schema=./shared/src/prisma/blog/blog.prisma --force
